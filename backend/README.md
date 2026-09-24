@@ -4,6 +4,8 @@ API REST para el flujo de compra y pago de productos con integración a una pasa
 
 > Nota: el nombre del repositorio no incluye la marca de la pasarela, según lo solicitado en la prueba.
 
+**En producción:** API en https://fullstackfecc.duckdns.org/api · Swagger en https://fullstackfecc.duckdns.org/api/docs
+
 ---
 
 ## Tabla de contenido

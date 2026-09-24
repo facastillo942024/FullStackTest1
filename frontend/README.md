@@ -2,6 +2,8 @@
 
 SPA de checkout construida con **React + TypeScript + Redux Toolkit** (arquitectura Flux). Mobile-first, resiliente ante recargas mediante `localStorage`, y con validación de tarjeta (Luhn + detección de franquicia) del lado del cliente. Consume el backend REST bajo `/api`.
 
+**En producción:** https://fullstackfecc.duckdns.org
+
 ---
 
 ## Tabla de contenido

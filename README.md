@@ -1,9 +1,23 @@
 # Tienda Checkout — Fullstack
+# Tienda Checkout — Fullstack
 
 Aplicación web fullstack para la compra y pago de un producto a través de una pasarela de pagos (entorno Sandbox / UAT). Cubre todo el flujo de *onboarding* de compra: catálogo → datos de tarjeta y envío → resumen → procesamiento del pago → confirmación con actualización de inventario.
 
 - **Backend:** NestJS + Arquitectura Hexagonal (Ports & Adapters) + Railway Oriented Programming (ROP) + PostgreSQL.
 - **Frontend:** React + TypeScript + Redux Toolkit (Flux), mobile-first, resiliente a recargas.
+
+## 🚀 Aplicación desplegada
+
+| Recurso | Enlace |
+| :--- | :--- |
+| **App en vivo** | https://fullstackfecc.duckdns.org |
+| **API (health)** | https://fullstackfecc.duckdns.org/api/health |
+| **Swagger / OpenAPI** | https://fullstackfecc.duckdns.org/api/docs |
+| **Repositorio** | https://github.com/facastillo942024/FullStackTest1 |
+
+> Infraestructura: VPS Linode (Ubuntu 24.04) · Nginx como proxy inverso · SSL con Let's Encrypt · backend gestionado con PM2 · PostgreSQL 16.
+
+**Tarjetas de prueba (Sandbox):** `4242 4242 4242 4242` aprueba · `4111 1111 1111 1111` rechaza. Cualquier fecha futura y CVC de 3 dígitos.
 
 Este repositorio contiene ambos proyectos. Cada uno tiene su propio README con detalle:
 
@@ -227,12 +241,73 @@ La aplicación se despliega tras **Nginx** como proxy inverso con SSL (Let's Enc
 - `/api/` → backend NestJS (`http://localhost:3000`)
 - `/` → build estático del frontend
 
-Pasos resumidos (VPS Ubuntu/Debian):
+### Entorno de producción actual
 
-1. Clonar el repositorio e instalar dependencias en `backend/` y `frontend/`.
-2. Configurar `backend/.env` (BD de producción y credenciales de la pasarela) y ejecutar migraciones/seed.
-3. `npm run build` en el backend y arrancarlo con un gestor de procesos (PM2 o systemd).
-4. `npm run build` en el frontend y servir `frontend/dist` desde Nginx.
-5. Configurar Nginx con los mapeos anteriores y habilitar SSL con Certbot.
+La aplicación está desplegada y operativa en un **VPS Linode (Ubuntu 24.04)**:
 
-> El detalle paso a paso de la configuración de Nginx y el servicio se documentará en la fase de despliegue.
+- **Node.js 20 LTS** + **PM2** manteniendo el backend (`checkout-api`) como servicio con auto-arranque en el reinicio.
+- **PostgreSQL 16** con base `checkout_db` y usuario dedicado `checkout_user`.
+- **Nginx 1.24** como proxy inverso.
+- **SSL/TLS** con Let's Encrypt (Certbot) sobre `fullstackfecc.duckdns.org`.
+
+Mapeo de Nginx:
+
+```nginx
+server {
+    server_name fullstackfecc.duckdns.org;
+    root /var/www/checkout-app/frontend/dist;
+    index index.html;
+
+    location /api/ {
+        proxy_pass http://localhost:3000/api/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location / {
+        try_files $uri $uri/ /index.html;   # SPA fallback
+    }
+
+    listen 443 ssl;                          # managed by Certbot
+    # ... certificados Let's Encrypt ...
+}
+```
+
+### Pasos de despliegue (reproducibles)
+
+```bash
+# 1. Dependencias del sistema
+curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && apt install -y nodejs
+npm install -g pm2
+apt install -y postgresql postgresql-contrib
+
+# 2. Base de datos
+sudo -u postgres psql -c "CREATE USER checkout_user WITH PASSWORD '***';"
+sudo -u postgres psql -c "CREATE DATABASE checkout_db OWNER checkout_user;"
+
+# 3. Código
+git clone <repo> /var/www/checkout-app && cd /var/www/checkout-app
+
+# 4. Backend
+cd backend && npm ci --include=dev
+cp .env.example .env    # ajustar credenciales de producción
+npm run build && npm run seed
+pm2 start dist/main.js --name checkout-api && pm2 save
+pm2 startup systemd -u root --hp /root
+
+# 5. Frontend
+cd ../frontend && npm ci --include=dev && npm run build
+
+# 6. Nginx + SSL (server block anterior) y recarga
+nginx -t && systemctl reload nginx
+```
+
+### Actualizar el despliegue (deploy de nuevos cambios)
+
+```bash
+cd /var/www/checkout-app && git pull
+cd backend  && npm ci --include=dev && npm run build && pm2 restart checkout-api
+cd ../frontend && npm ci --include=dev && npm run build && systemctl reload nginx
+```
