@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# Builds
+dist/
+build/
+
+# Coverage
+coverage/
+
+# Env
+.env
+.env.local
+*.env.local
+
+# Installers / binaries that must NOT be versioned
+*.exe
+
+# OS / editor
+.DS_Store
+*.log
+.vscode/
+.idea/
+
+# The original test brief (kept out of the public repo — contains the brand name + keys)
+Wompi FullStack Test*.pdf
+especificaciones_prueba_tecnica_wompi.md
